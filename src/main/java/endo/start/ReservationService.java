@@ -2,6 +2,7 @@ package endo.start;
 
 import org.springframework.stereotype.Service;
 
+import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -82,7 +83,9 @@ public class ReservationService {
         if (!reservationMap.containsKey(id)) {
             throw new NoSuchElementException("Not found reservation by id = " + id);
         }
-        reservationMap.remove(id);
+        Reservation r = reservationMap.get(id);
+        reservationMap.put(id, new Reservation(id, r.userId(), r.roomId(), r.startDate(), r.endDate(), ReservationStatus.CANCELLED));
+
     }
 
 
@@ -120,6 +123,23 @@ public class ReservationService {
     //Дополнительные методы
     public boolean isReservationConflict(Reservation reservation) {
 
+        for (Reservation r : reservationMap.values()) {
+            if (r.id().equals(reservation.id())) {
+                continue;
+            }
+            if (!r.roomId().equals(reservation.roomId())) {
+                continue;
+            }
+            if (!r.status().equals(ReservationStatus.APPROVED)) {
+                continue;
+            }
+            if ( reservation.startDate().isBefore(r.endDate())
+                && r.startDate().isBefore(reservation.endDate()) ) {
+                return true;
+
+            }
+
+        }
         return false;
     }
 }

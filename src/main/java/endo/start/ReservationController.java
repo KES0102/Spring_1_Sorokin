@@ -97,7 +97,13 @@ public class ReservationController {
     @PostMapping("/{id}/approve")
     public ResponseEntity<Reservation> approveReservation(@PathVariable Long id) {
         log.info("Called approveReservation");
-        var reservation = reservationService.approveReservation(id);
-        return ResponseEntity.ok(reservation);
+
+        try {
+            var reservation = reservationService.approveReservation(id);
+            return ResponseEntity.status(HttpStatus.OK).body(reservation);
+
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(505).build();
+        }
     }
 }
