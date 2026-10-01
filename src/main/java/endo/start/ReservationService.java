@@ -1,12 +1,9 @@
 package endo.start;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.sql.Timestamp;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Service
@@ -16,23 +13,30 @@ public class ReservationService {
     private final Map<Long, Reservation> reservationMap;
     private final AtomicLong idCounter;
 
+    private final DBReservationRepository db_reservation;
 
-    public ReservationService() {
+
+    public ReservationService(DBReservationRepository dbReservation) {
+        this.db_reservation = dbReservation;
         reservationMap = new HashMap<>();
         idCounter=new AtomicLong();
     }
 
 
     public Reservation getReservationById(Long id) {
-        if(!reservationMap.containsKey(id)){
-            throw new NoSuchElementException("Not found reservation by id = "+id);
-        }
-        return reservationMap.get(id);
+        ReservationEntity reservationEntity = db_reservation.findById(id).orElseThrow(
+                ()-> new EntityNotFoundException("Not found reservation by id = "+id
+                ));
+
+        return toDomainReservation(reservationEntity);
     }
 
 
     public List<Reservation> getAllReservation() {
-        return reservationMap.values().stream().toList();
+
+        List<ReservationEntity> allEntities = db_reservation.findAll();
+         return allEntities.stream().map(it->
+                 toDomainReservation(it)).toList();
     }
 
 
@@ -141,5 +145,16 @@ public class ReservationService {
 
         }
         return false;
+    }
+
+    private Reservation toDomainReservation(ReservationEntity reservationEntity){
+        return new Reservation(
+                reservationEntity.getId(),
+                reservationEntity.getUserId(),
+                reservationEntity.getRoomId(),
+                reservationEntity.getStartDate(),
+                reservationEntity.getEndDate(),
+                reservationEntity.getStatus()
+        );
     }
 }
