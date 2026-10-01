@@ -47,8 +47,9 @@ public class ReservationService {
         if (reservationToCreate.status() != null) {
             throw new IllegalArgumentException("Status shoud be empty");
         }
-        Reservation newReservation = new Reservation(
-                idCounter.incrementAndGet(),
+
+        var entityToSave = new ReservationEntity(
+                null,
                 reservationToCreate.userId(),
                 reservationToCreate.roomId(),
                 reservationToCreate.startDate(),
@@ -57,29 +58,27 @@ public class ReservationService {
         );
 
 
-        reservationMap.put(newReservation.id(), newReservation);
-        return newReservation;
+        var savedEntity = db_reservation.save(entityToSave);
+        return toDomainReservation(savedEntity);
     }
 
 
     public Reservation updateReservation(Long id, Reservation reservationToUpdate) {
-        if (!reservationMap.containsKey(id)) {
-            throw new NoSuchElementException("Not found reservation by id = " + id);
+
+        var reservationEntity = db_reservation.findById(id).orElseThrow(()-> new EntityNotFoundException("Not found reservation by id = "+id));
+        if (reservationEntity.getStatus() != ReservationStatus.PENDING) {
+            throw new IllegalStateException("Cannot modify reservation: status= " + reservationEntity.getStatus());
         }
-        var reservation = reservationMap.get(id);
-        if (reservation.status() != ReservationStatus.PENDING) {
-            throw new IllegalStateException("Cannot modify reservation: status= " + reservation.status());
-        }
-        Reservation updateReservation = new Reservation(
-                id,
+        var entityToSave = new ReservationEntity(
+                reservationEntity.getId(),
                 reservationToUpdate.userId(),
                 reservationToUpdate.roomId(),
                 reservationToUpdate.startDate(),
                 reservationToUpdate.endDate(),
                 ReservationStatus.PENDING
         );
-        reservationMap.put(id, updateReservation);
-        return updateReservation;
+        var updateReservation = db_reservation.save(entityToSave);
+        return toDomainReservation(updateReservation);
     }
 
 
