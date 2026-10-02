@@ -9,17 +9,12 @@ import java.util.concurrent.atomic.AtomicLong;
 @Service
 public class ReservationService {
 
-
-    private final Map<Long, Reservation> reservationMap;
-    private final AtomicLong idCounter;
-
     private final DBReservationRepository db_reservation;
 
 
     public ReservationService(DBReservationRepository dbReservation) {
         this.db_reservation = dbReservation;
-        reservationMap = new HashMap<>();
-        idCounter=new AtomicLong();
+
     }
 
 
@@ -66,9 +61,11 @@ public class ReservationService {
     public Reservation updateReservation(Long id, Reservation reservationToUpdate) {
 
         var reservationEntity = db_reservation.findById(id).orElseThrow(()-> new EntityNotFoundException("Not found reservation by id = "+id));
+
         if (reservationEntity.getStatus() != ReservationStatus.PENDING) {
             throw new IllegalStateException("Cannot modify reservation: status= " + reservationEntity.getStatus());
         }
+
         var entityToSave = new ReservationEntity(
                 reservationEntity.getId(),
                 reservationToUpdate.userId(),
@@ -78,66 +75,60 @@ public class ReservationService {
                 ReservationStatus.PENDING
         );
         var updateReservation = db_reservation.save(entityToSave);
+
         return toDomainReservation(updateReservation);
     }
 
 
     public void deleteReservation(Long id) {
-        if (!reservationMap.containsKey(id)) {
+        if (! db_reservation.existsById(id)) {
             throw new NoSuchElementException("Not found reservation by id = " + id);
         }
-        Reservation r = reservationMap.get(id);
-        reservationMap.put(id, new Reservation(id, r.userId(), r.roomId(), r.startDate(), r.endDate(), ReservationStatus.CANCELLED));
+        db_reservation.deleteById(id);
 
     }
 
 
     public Reservation approveReservation(Long id) {
 
-        if (!reservationMap.containsKey(id)) {
-            throw new NoSuchElementException("Not found reservation by id = " + id);
+        var reservationEntity = db_reservation.findById(id).orElseThrow(()-> new EntityNotFoundException("Not found reservation by id = "+id));
+
+
+        if(reservationEntity.getStatus()!=ReservationStatus.PENDING){
+            throw new IllegalStateException("Cannot approve reservation: status= " + reservationEntity.getEndDate());
         }
 
-        var reservation = reservationMap.get(id);
+        var isConflict = isReservationConflict(reservationEntity);
 
-
-        if(reservation.status()!=ReservationStatus.PENDING){
-            throw new IllegalStateException("Cannot approve reservation: status= " + reservation.status());
-        }
-
-        var isConflict = isReservationConflict(reservation);
         if (isConflict) {
             throw new IllegalStateException("Cannot approve reservation because conflict");
         }
 
-        Reservation approvedReservation = new Reservation(
-                id,
-                reservation.userId(),
-                reservation.roomId(),
-                reservation.startDate(),
-                reservation.endDate(),
-                ReservationStatus.APPROVED
-        );
-        reservationMap.put(id, approvedReservation);
-        return approvedReservation;
+        reservationEntity.setStatus(ReservationStatus.APPROVED);
+
+        db_reservation.save(reservationEntity);
+
+        return toDomainReservation(reservationEntity);
     }
 
 
     //Дополнительные методы
-    public boolean isReservationConflict(Reservation reservation) {
+    public boolean isReservationConflict(ReservationEntity reservationEntity) {
 
-        for (Reservation r : reservationMap.values()) {
-            if (r.id().equals(reservation.id())) {
+        var allReservationsEntity = db_reservation.findAll();
+
+        for (ReservationEntity momentEntity : allReservationsEntity) {
+            if (momentEntity.getId().equals(reservationEntity.getId())) {
                 continue;
             }
-            if (!r.roomId().equals(reservation.roomId())) {
+            if (! reservationEntity.getRoomId().equals(momentEntity.getRoomId())) {
                 continue;
             }
-            if (!r.status().equals(ReservationStatus.APPROVED)) {
+            if (! momentEntity.getStatus().equals(ReservationStatus.APPROVED)) {
                 continue;
             }
-            if ( reservation.startDate().isBefore(r.endDate())
-                && r.startDate().isBefore(reservation.endDate()) ) {
+            if ( reservationEntity.getStartDate().isBefore(momentEntity.getEndDate())
+                && momentEntity.getStartDate().isBefore(reservationEntity.getEndDate()) ) {
                 return true;
 
             }
