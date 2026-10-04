@@ -2,9 +2,9 @@ package endo.start;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 public class ReservationService {
@@ -28,6 +28,10 @@ public class ReservationService {
 
 
     public List<Reservation> getAllReservation() {
+
+        /*List<ReservationEntity> reservationEntities = db_reservation.findAllByStatusIs(ReservationStatus.PENDING);
+        return reservationEntities.stream().map(it->
+                toDomainReservation(it)).toList();*/
 
         List<ReservationEntity> allEntities = db_reservation.findAll();
          return allEntities.stream().map(it->
@@ -80,11 +84,12 @@ public class ReservationService {
     }
 
 
-    public void deleteReservation(Long id) {
+    @Transactional
+    public void cancelReservation(Long id) {
         if (! db_reservation.existsById(id)) {
             throw new NoSuchElementException("Not found reservation by id = " + id);
         }
-        db_reservation.deleteById(id);
+        db_reservation.setStatusCancel(id, ReservationStatus.CANCELLED);
 
     }
 
