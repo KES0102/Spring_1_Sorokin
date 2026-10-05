@@ -55,6 +55,6 @@ public class GlobalExceptionHandler {
                 e.getMessage(),
                 LocalDateTime.now()
         );
-        return ResponseEntity.status(404).body(errorDto);
+        return ResponseEntity.status(400).body(errorDto);
     }
 }

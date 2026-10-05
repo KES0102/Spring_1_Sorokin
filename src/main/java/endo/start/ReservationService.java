@@ -91,17 +91,17 @@ public class ReservationService {
 
     @Transactional
     public void cancelReservation(Long id) {
-       var reservation = db_reservation.findById(id).orElseThrow(
-               ()-> new NoSuchElementException("Not found reservation by id = " + id));
+        var reservation = db_reservation.findById(id).orElseThrow(
+                () -> new NoSuchElementException("Not found reservation by id = " + id));
 
-       if(reservation.getStatus().equals(ReservationStatus.APPROVED)){
-           throw new IllegalStateException("Cannot cancel approved reservation. Contact with manager please");
-       }
+        if (reservation.getStatus().equals(ReservationStatus.APPROVED)) {
+            throw new IllegalStateException("Cannot cancel approved reservation. Contact with manager please");
+        }
 
-        if(reservation.getStatus().equals(ReservationStatus.CANCELLED)){
+        if (reservation.getStatus().equals(ReservationStatus.CANCELLED)) {
             throw new IllegalStateException("Cannot cancel CANCELLED reservation");
         }
-       db_reservation.setStatusCancel(id, ReservationStatus.CANCELLED);
+        db_reservation.setStatusCancel(id, ReservationStatus.CANCELLED);
 
     }
 
