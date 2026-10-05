@@ -1,5 +1,6 @@
 package endo.start;
 
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -43,7 +44,7 @@ public class ReservationController {
 
     @PostMapping()
     public ResponseEntity<Reservation> createReservation(
-            @RequestBody Reservation reservationToCreate
+            @RequestBody @Valid Reservation reservationToCreate
     ) {
         log.info("Called createReservation");
         return ResponseEntity.status(HttpStatus.CREATED).
@@ -56,18 +57,11 @@ public class ReservationController {
     @PutMapping("/{id}")
     public ResponseEntity<Reservation> updateReservation(
             @PathVariable("id") Long id,
-            @RequestBody Reservation reservationToUpdate) {
+            @RequestBody @Valid Reservation reservationToUpdate) {
         log.info("Called method reservationToUpdate id = {}; reservationToUpdate = {}", id, reservationToUpdate);
+        var updated = reservationService.updateReservation(id, reservationToUpdate);
+        return ResponseEntity.status(HttpStatus.OK).body(updated);
 
-        try {
-            var updated = reservationService.updateReservation(id, reservationToUpdate);
-            return ResponseEntity.status(HttpStatus.OK).body(updated);
-
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.status(404).build();
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(403).build();
-        }
 
 
     }
@@ -91,13 +85,9 @@ public class ReservationController {
     @PostMapping("/{id}/approve")
     public ResponseEntity<Reservation> approveReservation(@PathVariable Long id) {
         log.info("Called approveReservation");
+        var reservation = reservationService.approveReservation(id);
+        return ResponseEntity.status(HttpStatus.OK).body(reservation);
 
-        try {
-            var reservation = reservationService.approveReservation(id);
-            return ResponseEntity.status(HttpStatus.OK).body(reservation);
 
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(505).build();
-        }
     }
 }

@@ -40,11 +40,13 @@ public class ReservationService {
 
 
     public Reservation createReservation(Reservation reservationToCreate) {
-        if (reservationToCreate.id() != null) {
-            throw new IllegalArgumentException("Id shoud be empty");
-        }
+
         if (reservationToCreate.status() != null) {
             throw new IllegalArgumentException("Status shoud be empty");
+        }
+
+        if ( ! reservationToCreate.endDate().isAfter(reservationToCreate.startDate())) {
+            throw new IllegalArgumentException("Start date must be 1 day earlier that end date");
         }
 
         var entityToSave = new ReservationEntity(
@@ -66,6 +68,9 @@ public class ReservationService {
 
         var reservationEntity = db_reservation.findById(id).orElseThrow(()-> new EntityNotFoundException("Not found reservation by id = "+id));
 
+        if ( ! reservationToUpdate.endDate().isAfter(reservationToUpdate.startDate())) {
+            throw new IllegalArgumentException("Start date must be 1 day earlier that end date");
+        }
         if (reservationEntity.getStatus() != ReservationStatus.PENDING) {
             throw new IllegalStateException("Cannot modify reservation: status= " + reservationEntity.getStatus());
         }
@@ -86,10 +91,17 @@ public class ReservationService {
 
     @Transactional
     public void cancelReservation(Long id) {
-        if (! db_reservation.existsById(id)) {
-            throw new NoSuchElementException("Not found reservation by id = " + id);
+       var reservation = db_reservation.findById(id).orElseThrow(
+               ()-> new NoSuchElementException("Not found reservation by id = " + id));
+
+       if(reservation.getStatus().equals(ReservationStatus.APPROVED)){
+           throw new IllegalStateException("Cannot cancel approved reservation. Contact with manager please");
+       }
+
+        if(reservation.getStatus().equals(ReservationStatus.CANCELLED)){
+            throw new IllegalStateException("Cannot cancel CANCELLED reservation");
         }
-        db_reservation.setStatusCancel(id, ReservationStatus.CANCELLED);
+       db_reservation.setStatusCancel(id, ReservationStatus.CANCELLED);
 
     }
 
@@ -100,7 +112,7 @@ public class ReservationService {
 
 
         if(reservationEntity.getStatus()!=ReservationStatus.PENDING){
-            throw new IllegalStateException("Cannot approve reservation: status= " + reservationEntity.getEndDate());
+            throw new IllegalStateException("Cannot approve reservation: status= " + reservationEntity.getStatus());
         }
 
         var isConflict = isReservationConflict(reservationEntity);
