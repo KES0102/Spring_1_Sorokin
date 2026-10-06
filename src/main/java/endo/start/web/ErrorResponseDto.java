@@ -1,4 +1,4 @@
-package endo.start;
+package endo.start.web;
 
 import java.time.LocalDateTime;
 

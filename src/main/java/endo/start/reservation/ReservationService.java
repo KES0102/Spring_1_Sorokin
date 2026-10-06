@@ -1,18 +1,22 @@
-package endo.start;
+package endo.start.reservation;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
 public class ReservationService {
 
+    private final ReservationMapper mapper;
     private final DBReservationRepository db_reservation;
 
 
-    public ReservationService(DBReservationRepository dbReservation) {
+    public ReservationService(ReservationMapper mapper, DBReservationRepository dbReservation) {
+        this.mapper = mapper;
         this.db_reservation = dbReservation;
 
     }
@@ -23,7 +27,7 @@ public class ReservationService {
                 ()-> new EntityNotFoundException("Not found reservation by id = "+id
                 ));
 
-        return toDomainReservation(reservationEntity);
+        return mapper.toReservation(reservationEntity);
     }
 
 
@@ -35,7 +39,7 @@ public class ReservationService {
 
         List<ReservationEntity> allEntities = db_reservation.findAll();
          return allEntities.stream().map(it->
-                 toDomainReservation(it)).toList();
+                 mapper.toReservation(it)).toList();
     }
 
 
@@ -60,7 +64,7 @@ public class ReservationService {
 
 
         var savedEntity = db_reservation.save(entityToSave);
-        return toDomainReservation(savedEntity);
+        return mapper.toReservation(savedEntity);
     }
 
 
@@ -85,7 +89,7 @@ public class ReservationService {
         );
         var updateReservation = db_reservation.save(entityToSave);
 
-        return toDomainReservation(updateReservation);
+        return mapper.toReservation(updateReservation);
     }
 
 
@@ -115,7 +119,7 @@ public class ReservationService {
             throw new IllegalStateException("Cannot approve reservation: status= " + reservationEntity.getStatus());
         }
 
-        var isConflict = isReservationConflict(reservationEntity);
+        var isConflict =  isReservationConflict(reservationEntity.getRoomId(), reservationEntity.getStartDate(), reservationEntity.getEndDate());
 
         if (isConflict) {
             throw new IllegalStateException("Cannot approve reservation because conflict");
@@ -125,43 +129,19 @@ public class ReservationService {
 
         db_reservation.save(reservationEntity);
 
-        return toDomainReservation(reservationEntity);
+        return mapper.toReservation(reservationEntity);
     }
 
 
     //Дополнительные методы
-    public boolean isReservationConflict(ReservationEntity reservationEntity) {
-
-        var allReservationsEntity = db_reservation.findAll();
-
-        for (ReservationEntity momentEntity : allReservationsEntity) {
-            if (momentEntity.getId().equals(reservationEntity.getId())) {
-                continue;
-            }
-            if (! reservationEntity.getRoomId().equals(momentEntity.getRoomId())) {
-                continue;
-            }
-            if (! momentEntity.getStatus().equals(ReservationStatus.APPROVED)) {
-                continue;
-            }
-            if ( reservationEntity.getStartDate().isBefore(momentEntity.getEndDate())
-                && momentEntity.getStartDate().isBefore(reservationEntity.getEndDate()) ) {
-                return true;
-
-            }
-
+    public boolean isReservationConflict(Long roomId, LocalDate startDate, LocalDate endDate) {
+        List<Long> conflictIds = db_reservation.findConflictresrvationIds(roomId, startDate, endDate, ReservationStatus.APPROVED);
+        if(conflictIds.isEmpty()){
+            return   false;
         }
-        return false;
+        return true;
+
     }
 
-    private Reservation toDomainReservation(ReservationEntity reservationEntity){
-        return new Reservation(
-                reservationEntity.getId(),
-                reservationEntity.getUserId(),
-                reservationEntity.getRoomId(),
-                reservationEntity.getStartDate(),
-                reservationEntity.getEndDate(),
-                reservationEntity.getStatus()
-        );
-    }
+
 }

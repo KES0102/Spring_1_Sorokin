@@ -1,4 +1,4 @@
-package endo.start;
+package endo.start.reservation;
 
 import jakarta.validation.Valid;
 import org.slf4j.Logger;

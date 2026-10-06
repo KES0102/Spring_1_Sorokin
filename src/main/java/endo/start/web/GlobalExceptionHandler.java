@@ -1,4 +1,4 @@
-package endo.start;
+package endo.start.web;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {

@@ -1,4 +1,4 @@
-package endo.start;
+package endo.start.reservation;
 
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
