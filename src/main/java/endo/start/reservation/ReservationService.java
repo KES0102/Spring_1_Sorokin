@@ -5,7 +5,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -31,11 +30,7 @@ public class ReservationService {
     }
 
 
-    public List<Reservation> getAllReservation() {
-
-        /*List<ReservationEntity> reservationEntities = db_reservation.findAllByStatusIs(ReservationStatus.PENDING);
-        return reservationEntities.stream().map(it->
-                toDomainReservation(it)).toList();*/
+    public List<Reservation> searchAllByFilter(ReservationSearchFilter filter) {
 
         List<ReservationEntity> allEntities = db_reservation.findAll();
          return allEntities.stream().map(it->

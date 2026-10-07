@@ -35,9 +35,16 @@ public class ReservationController {
 
 
     @GetMapping("/all")
-    public ResponseEntity<List<Reservation>> getReservationAll() {
+    public ResponseEntity<List<Reservation>> getReservationAll(
+            @RequestParam("roomId") Long roomId,
+            @RequestParam("userId") Long userId,
+            @RequestParam("pageSize") Long pageSize,
+            @RequestParam("pageNumber") Integer pageNumber
+    ) {
         log.info("Called getReservationAll");
-        return ResponseEntity.ok(reservationService.getAllReservation());
+
+        var filter = new ReservationSearchFilter(roomId, userId, pageSize, pageNumber);
+        return ResponseEntity.ok(reservationService.searchAllByFilter(filter));
 
     }
 
