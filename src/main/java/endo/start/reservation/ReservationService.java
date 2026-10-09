@@ -1,10 +1,11 @@
 package endo.start.reservation;
 
+import endo.start.reservation.availability.ReservationAvailabilityService;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.*;
 
 @Service
@@ -13,11 +14,14 @@ public class ReservationService {
     private final ReservationMapper mapper;
     private final DBReservationRepository db_reservation;
 
+    private final ReservationAvailabilityService serviceAvailability;
 
-    public ReservationService(ReservationMapper mapper, DBReservationRepository dbReservation) {
+
+    public ReservationService(ReservationMapper mapper, DBReservationRepository dbReservation, ReservationAvailabilityService service) {
         this.mapper = mapper;
         this.db_reservation = dbReservation;
 
+        this.serviceAvailability = service;
     }
 
 
@@ -32,7 +36,17 @@ public class ReservationService {
 
     public List<Reservation> searchAllByFilter(ReservationSearchFilter filter) {
 
-        List<ReservationEntity> allEntities = db_reservation.findAll();
+        int pageSize = filter.pageSize() != null ? filter.pageSize() : 10;
+        int pageNumber = filter.pageNumber() != null ? filter.pageNumber() : 0;
+        var pageable = Pageable.ofSize(pageSize).withPage(pageNumber);
+
+
+        List<ReservationEntity> allEntities = db_reservation.searchAllByFilter(
+                filter.roomId(),
+                filter.userId(),
+                pageable
+        );
+
          return allEntities.stream().map(it->
                  mapper.toReservation(it)).toList();
     }
@@ -114,9 +128,9 @@ public class ReservationService {
             throw new IllegalStateException("Cannot approve reservation: status= " + reservationEntity.getStatus());
         }
 
-        var isConflict =  isReservationConflict(reservationEntity.getRoomId(), reservationEntity.getStartDate(), reservationEntity.getEndDate());
+        var isAvailableToApprove =  serviceAvailability.isReservationAvailable(reservationEntity.getRoomId(), reservationEntity.getStartDate(), reservationEntity.getEndDate());
 
-        if (isConflict) {
+        if (!isAvailableToApprove) {
             throw new IllegalStateException("Cannot approve reservation because conflict");
         }
 
@@ -129,14 +143,7 @@ public class ReservationService {
 
 
     //Дополнительные методы
-    public boolean isReservationConflict(Long roomId, LocalDate startDate, LocalDate endDate) {
-        List<Long> conflictIds = db_reservation.findConflictresrvationIds(roomId, startDate, endDate, ReservationStatus.APPROVED);
-        if(conflictIds.isEmpty()){
-            return   false;
-        }
-        return true;
 
-    }
 
 
 }

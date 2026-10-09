@@ -1,12 +1,12 @@
 package endo.start.reservation;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 public interface DBReservationRepository extends JpaRepository<ReservationEntity, Long> {
@@ -59,4 +59,16 @@ public interface DBReservationRepository extends JpaRepository<ReservationEntity
             @Param("endDate") LocalDate endDate,
             @Param("status") ReservationStatus status
     );
+
+    @Query("""
+        SELECT r from ReservationEntity r 
+            WHERE (:roomId IS NULL or r.roomId= :roomId)
+            and (:userId IS NULL or r.userId= :userId)                    
+            """)
+    List<ReservationEntity> searchAllByFilter(
+            @Param("roomId") Long roomId,
+            @Param("userId") Long userId,
+            Pageable pageable
+
+            );
 }

@@ -34,12 +34,12 @@ public class ReservationController {
     }
 
 
-    @GetMapping("/all")
+    @GetMapping()
     public ResponseEntity<List<Reservation>> getReservationAll(
-            @RequestParam("roomId") Long roomId,
-            @RequestParam("userId") Long userId,
-            @RequestParam("pageSize") Long pageSize,
-            @RequestParam("pageNumber") Integer pageNumber
+            @RequestParam(name = "roomId", required = false) Long roomId,
+            @RequestParam(name = "userId", required = false) Long userId,
+            @RequestParam(name = "pageSize", required = false) Integer pageSize,
+            @RequestParam(name = "pageNumber", required = false) Integer pageNumber
     ) {
         log.info("Called getReservationAll");
 

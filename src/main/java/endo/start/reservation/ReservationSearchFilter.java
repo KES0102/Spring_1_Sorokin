@@ -3,7 +3,7 @@ package endo.start.reservation;
 public record ReservationSearchFilter(
         Long roomId,
         Long userId,
-        Long pageSize,
+        Integer pageSize,
         Integer pageNumber
 ) {
 }
